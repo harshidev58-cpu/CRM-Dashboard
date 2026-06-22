@@ -42,6 +42,16 @@ const ComplaintSchema = new Schema<IComplaintDocument>({
     default: 'Needs Verification',
     index: true
   },
+  realityScoreBreakdown: {
+    type: [{
+      factor: { type: String, required: true },
+      delta: { type: Number, required: true }
+    }],
+    default: []
+  },
+  isQuestionableResolution: { type: Boolean, default: false, index: true },
+  isResurrected: { type: Boolean, default: false, index: true },
+  resurrectedFromComplaintId: { type: Schema.Types.ObjectId, ref: 'Complaint', index: true },
   embedding: { type: [Number], default: [] },
   imageUrl: { type: String },
   voiceUrl: { type: String },

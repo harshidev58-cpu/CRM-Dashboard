@@ -27,7 +27,7 @@ export default function CitizenPortal() {
   // Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [address, setAddress] = useState('Colaba Causeway, South Mumbai, 400005');
+  const [address, setAddress] = useState('Sector 12, Dwarka, Delhi');
   const [imageFile, setImageFile] = useState<string | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   
@@ -46,12 +46,12 @@ export default function CitizenPortal() {
 
   // Coordinates Mapping based on neighborhood for seeding
   const coordinatesMap: Record<string, {lat: number, lng: number}> = {
-    'Colaba Causeway, South Mumbai, 400005': { lat: 18.9226, lng: 72.8344 },
-    'Flora Fountain, Fort, Mumbai, 400001': { lat: 18.9322, lng: 72.8310 },
-    'Girgaon Chowpatty, Marine Drive, Mumbai, 400007': { lat: 18.9405, lng: 72.8250 },
-    'Malabar Hill Road, Mumbai, 400006': { lat: 18.9500, lng: 72.8120 },
-    'Byculla East Market, Mumbai, 400027': { lat: 18.9610, lng: 72.8420 },
-    'Tardeo Main Circle, Mumbai, 400034': { lat: 18.9702, lng: 72.8210 }
+    'Sector 12, Dwarka, Delhi': { lat: 28.5912, lng: 77.0422 },
+    'Connaught Place, Central Delhi': { lat: 28.6304, lng: 77.2177 },
+    'Chandni Chowk Road, Old Delhi': { lat: 28.6507, lng: 77.2303 },
+    'Chanakyapuri Estate, New Delhi': { lat: 28.5983, lng: 77.1830 },
+    'Ward 3, Karol Bagh, Delhi': { lat: 28.6506, lng: 77.1896 },
+    'Nehru Place Circle, South Delhi': { lat: 28.5487, lng: 77.2513 }
   };
 
   const fetchComplaints = async () => {

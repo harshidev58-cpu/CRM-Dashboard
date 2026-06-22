@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @layer base {
@@ -52,99 +53,310 @@
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
-  
+
   --color-reality-verified: hsl(var(--reality-verified));
   --color-reality-needs-verification: hsl(var(--reality-needs-verification));
   --color-reality-high-risk: hsl(var(--reality-high-risk));
 }
 
+/* ============================================================
+   NATIONAL COMMAND CENTER — DESIGN SYSTEM
+   Inspired by Palantir Gotham, Anduril Lattice, Bloomberg,
+   Linear, and Apple Vision Pro
+   ============================================================ */
+
 body {
-  background: #07090f;
-  color: #fafafa;
-  font-family: 'Outfit', sans-serif;
+  background: #050710;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(120, 80, 255, 0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(6, 182, 212, 0.05) 0%, transparent 60%);
+  color: #e2e8f0;
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
   overflow-x: hidden;
 }
 
-/* Glassmorphism Classes */
+/* ────────────────────────────────────────────────
+   AURORA GLASS — Core Panel System
+   Deep navy glass with backdrop blur + aurora bloom
+   ──────────────────────────────────────────────── */
 .glass-panel {
-  background: #11141d;
-  border: 1px solid rgba(255, 255, 255, 0.045);
+  background: rgba(8, 11, 22, 0.85);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+/* Aurora variant — violet/cyan ambient bloom behind glass */
+.glass-aurora {
+  background: rgba(7, 9, 20, 0.9);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
+    0 0 0 1px rgba(139, 92, 246, 0.06) inset,
+    0 12px 40px rgba(0, 0, 0, 0.6),
+    0 2px 8px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-aurora::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  left: -40px;
+  width: 240px;
+  height: 200px;
+  background: radial-gradient(ellipse, rgba(139, 92, 246, 0.07) 0%, transparent 70%);
+  pointer-events: none;
+  animation: auroraDrift 8s ease-in-out infinite alternate;
+  border-radius: 50%;
+}
+
+.glass-aurora::after {
+  content: '';
+  position: absolute;
+  bottom: -60px;
+  right: -40px;
+  width: 200px;
+  height: 160px;
+  background: radial-gradient(ellipse, rgba(6, 182, 212, 0.05) 0%, transparent 70%);
+  pointer-events: none;
+  animation: auroraDrift 10s ease-in-out infinite alternate-reverse;
+  border-radius: 50%;
 }
 
 .glass-panel-glow {
-  background: #11141d;
-  border: 1px solid rgba(139, 92, 246, 0.15);
-  box-shadow: 0 8px 32px 0 rgba(139, 92, 246, 0.015);
+  background: rgba(10, 13, 26, 0.9);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
+    0 0 0 1px rgba(139, 92, 246, 0.08) inset,
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(139, 92, 246, 0.06);
 }
 
-.glass-card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.glass-card-hover:hover {
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.3);
-  transform: translateY(-2px);
+/* ────────────────────────────────────────────────
+   SPOTLIGHT HOVER — Mouse-tracking radial glow
+   Set --mx / --my via JS on mousemove
+   ──────────────────────────────────────────────── */
+.spotlight-card {
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.3s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+.spotlight-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(
+    400px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(139, 92, 246, 0.10) 0%,
+    rgba(139, 92, 246, 0.03) 40%,
+    transparent 70%
+  );
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+  border-radius: inherit;
 }
-::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
+
+.spotlight-card:hover::before {
+  opacity: 1;
 }
+
+.spotlight-card:hover {
+  border-color: rgba(139, 92, 246, 0.22) !important;
+  box-shadow:
+    0 0 0 1px rgba(139, 92, 246, 0.08) inset,
+    0 16px 48px rgba(0, 0, 0, 0.5),
+    0 4px 12px rgba(139, 92, 246, 0.08);
+  transform: translateY(-1px);
+}
+
+/* Critical card spotlight — red glow variant */
+.spotlight-card-critical::before {
+  background: radial-gradient(
+    400px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(239, 68, 68, 0.09) 0%,
+    rgba(239, 68, 68, 0.02) 40%,
+    transparent 70%
+  );
+}
+
+.spotlight-card-critical:hover {
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  box-shadow:
+    0 0 0 1px rgba(239, 68, 68, 0.06) inset,
+    0 16px 48px rgba(0, 0, 0, 0.5),
+    0 4px 12px rgba(239, 68, 68, 0.10);
+}
+
+/* ────────────────────────────────────────────────
+   SCROLLBAR — Thin, coordinated
+   ──────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(139, 92, 246, 0.3);
+  background: rgba(139, 92, 246, 0.2);
   border-radius: 4px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.5);
+::-webkit-scrollbar-thumb:hover { background: rgba(139, 92, 246, 0.45); }
+
+/* ────────────────────────────────────────────────
+   KEYFRAMES
+   ──────────────────────────────────────────────── */
+
+/* Slow sinusoidal aurora bloom shift */
+@keyframes auroraDrift {
+  0%   { transform: translate(0, 0) scale(1); opacity: 0.8; }
+  33%  { transform: translate(20px, -15px) scale(1.1); opacity: 1; }
+  66%  { transform: translate(-10px, 10px) scale(0.95); opacity: 0.7; }
+  100% { transform: translate(15px, 20px) scale(1.05); opacity: 0.9; }
 }
 
-/* Keyframes for glowing points */
+/* Reality Score bar liquid fill */
+@keyframes realityFill {
+  from { transform: scaleX(0); transform-origin: left; }
+  to   { transform: scaleX(1); transform-origin: left; }
+}
+
+.reality-bar-fill {
+  animation: realityFill 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Number tick spring */
+@keyframes numberTick {
+  0%   { opacity: 0; transform: translateY(6px) scale(0.94); }
+  60%  { opacity: 1; transform: translateY(-1px) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-number-tick {
+  animation: numberTick 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Red badge pulse with glow */
+@keyframes badgePulse {
+  0%, 100% {
+    opacity: 0.9;
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.3), 0 0 12px rgba(239, 68, 68, 0.1);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.6), 0 0 28px rgba(239, 68, 68, 0.2);
+  }
+}
+.badge-pulse-red { animation: badgePulse 2s infinite ease-in-out; }
+
+/* Violet glow pulse */
 @keyframes pulseGlow {
   0%, 100% {
-    opacity: 0.5;
-    box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+    opacity: 0.6;
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
   }
   50% {
     opacity: 1;
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.7);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.7), 0 0 40px rgba(139, 92, 246, 0.2);
   }
 }
+.pulse-glow-violet { animation: pulseGlow 2s infinite ease-in-out; }
 
-.pulse-glow-violet {
-  animation: pulseGlow 2s infinite ease-in-out;
-}
-
+/* Critical card pulsing border */
 @keyframes criticalPulse {
   0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 8px rgba(239, 68, 68, 0.3), inset 0 0 4px rgba(239, 68, 68, 0.1);
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.1), 0 8px 32px rgba(0,0,0,0.5);
   }
   50% {
-    transform: scale(1.015);
-    box-shadow: 0 0 20px 4px rgba(239, 68, 68, 0.65), inset 0 0 8px rgba(239, 68, 68, 0.25);
-    border-color: rgba(239, 68, 68, 0.5);
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.25), 0 0 24px rgba(239, 68, 68, 0.1), 0 8px 32px rgba(0,0,0,0.5);
   }
 }
+.animate-critical-pulse { animation: criticalPulse 2.5s infinite ease-in-out; }
 
-.animate-critical-pulse {
-  animation: criticalPulse 2.5s infinite ease-in-out;
-}
-
+/* Feed item fade-in slide */
 @keyframes feedFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-feed-fade-in { animation: feedFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* Scan line — subtle horizontal sweep for terminal feel */
+@keyframes scanLine {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(200%); }
+}
+.scan-line {
+  position: absolute;
+  left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
+  animation: scanLine 4s linear infinite;
+  pointer-events: none;
+  z-index: 2;
 }
 
-.animate-feed-fade-in {
-  animation: feedFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+/* Gradient separator line */
+.gradient-sep {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(139, 92, 246, 0.4) 30%, rgba(6, 182, 212, 0.3) 70%, transparent 100%);
+}
+
+/* Status dot indicators */
+.status-dot-green {
+  width: 6px; height: 6px;
+  background: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+  animation: pulseGreenDot 2s infinite;
+}
+@keyframes pulseGreenDot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(16, 185, 129, 0.6); }
+  50%       { opacity: 0.7; box-shadow: 0 0 12px rgba(16, 185, 129, 0.9); }
+}
+
+/* Monospace metric label */
+.metric-label {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.metric-value {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Nav sidebar active item glow */
+.nav-item-active {
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  box-shadow:
+    0 0 0 1px rgba(139, 92, 246, 0.06) inset,
+    0 2px 12px rgba(139, 92, 246, 0.08);
+  color: #f8fafc;
+}
+
+.nav-item-inactive {
+  border: 1px solid transparent;
+  color: #475569;
+}
+
+.nav-item-inactive:hover {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.04);
+  color: #94a3b8;
 }

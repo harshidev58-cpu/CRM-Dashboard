@@ -2,6 +2,7 @@ import { Complaint } from '@/models/Complaint';
 import { Alert } from '@/models/Alert';
 import { Department } from '@/models/Department';
 import { Officer } from '@/models/Officer';
+import { User } from '@/models/User';
 import { askGeminiCopilot } from '@/lib/gemini';
 
 export class CopilotEngine {

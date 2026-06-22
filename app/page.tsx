@@ -183,7 +183,7 @@ export default function LoginPage() {
               </button>
 
               <button
-                onClick={() => handleQuickLogin('citizen@gov.in', 'citizen123')}
+                onClick={() => handleQuickLogin('citizen1@gov.in', 'password123')}
                 disabled={loading}
                 className="flex flex-col items-center justify-center rounded-xl bg-zinc-900/60 border border-zinc-800 p-2.5 text-center transition-all hover:border-emerald-500/40 hover:bg-zinc-900"
               >
@@ -193,7 +193,7 @@ export default function LoginPage() {
               </button>
 
               <button
-                onClick={() => handleQuickLogin('officer_water@gov.in', 'officer123')}
+                onClick={() => handleQuickLogin('officer1@gov.in', 'password123')}
                 disabled={loading}
                 className="flex flex-col items-center justify-center rounded-xl bg-zinc-900/60 border border-zinc-800 p-2.5 text-center transition-all hover:border-blue-500/40 hover:bg-zinc-900"
               >

@@ -2,6 +2,8 @@ import { Complaint } from '@/models/Complaint';
 import { Alert } from '@/models/Alert';
 import { Department } from '@/models/Department';
 import { Officer } from '@/models/Officer';
+import { User } from '@/models/User';
+import { generateAIRecommendations } from '@/lib/recommendations';
 
 export interface IDailyBriefReport {
   date: string;
@@ -119,22 +121,11 @@ export class BriefService {
       });
     }
 
-    // 4. Generate Recommended Actions based on data
-    const recommendedActions = [];
-    if (criticalAlerts.length > 0) {
-      recommendedActions.push(`Deploy emergency response teams immediately to resolve ${criticalAlerts.length} active critical safety hazards.`);
-    }
-    if (suspiciousClosures.length > 0) {
-      recommendedActions.push(`Initiate third-party independent audits on ${suspiciousClosures.length} resolved complaints flagged as 'High Risk' reality gaps.`);
-    }
-    if (highRiskDepartments.length > 0 && highRiskDepartments[0].realityGap > 15) {
-      recommendedActions.push(`Issue a formal explanation request to the Secretary of the ${highRiskDepartments[0].name} regarding a ${highRiskDepartments[0].realityGap}% Reality Gap.`);
-    }
-    if (suspiciousClosures.some(s => s.officerTrustScore < 60)) {
-      recommendedActions.push(`Temporarily suspend field-closure authority for officers with Trust Scores below 60%.`);
-    }
+    // 4. Generate Recommended Actions dynamically based on data
+    const aiRecs = await generateAIRecommendations();
+    const recommendedActions = aiRecs.map(r => `${r.issue}: ${r.recommendation}`);
     if (recommendedActions.length === 0) {
-      recommendedActions.push('All governance performance metrics are within normal ranges. Continue routine SLA audits.');
+      recommendedActions.push('All Checked governance performance metrics are within normal ranges. Continue routine SLA audits.');
     }
 
     return {

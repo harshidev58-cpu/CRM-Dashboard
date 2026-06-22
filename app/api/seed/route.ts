@@ -7,6 +7,8 @@ import { Complaint } from '@/models/Complaint';
 import { Alert } from '@/models/Alert';
 import { RealityScore } from '@/models/RealityScore';
 import { AuditLog } from '@/models/AuditLog';
+import { ResurrectionEvent } from '@/models/ResurrectionEvent';
+import { TrustEngine } from '@/services/TrustEngine';
 import bcrypt from 'bcryptjs';
 
 export async function GET(req: NextRequest) {
@@ -40,6 +42,7 @@ export async function GET(req: NextRequest) {
     await Alert.deleteMany({});
     await RealityScore.deleteMany({});
     await AuditLog.deleteMany({});
+    await ResurrectionEvent.deleteMany({});
 
     console.log('Database wiped for 100-complaints seeding.');
 
@@ -70,7 +73,7 @@ export async function GET(req: NextRequest) {
 
     // Seed the CMO Admin Account for direct login
     await User.create({
-      name: 'CM Devendra Fadnavis',
+      name: 'CM Delhi',
       email: 'cm@gov.in',
       passwordHash: await bcrypt.hash('cm123', 10),
       role: 'cm'
@@ -126,118 +129,240 @@ export async function GET(req: NextRequest) {
     const complaintsArray: any[] = [];
 
     // ========================================================
-    // SCENARIO 1: HIDDEN WATER INFRASTRUCTURE FAILURE (Sector 12)
+    // 3 SUSPICIOUS CLOSURE SCENARIOS (Officially resolved, realityScore < 30)
     // ========================================================
-    const s1Titles = [
-      { t: 'Water supply stopped for 3 days in Sector 12', d: 'Since Tuesday water supply is completely dry in block C.' },
-      { t: 'Low water pressure in Sector 12', d: 'Hardly trickling. Water is not reaching the storage tanks.' },
-      { t: 'Dirty water coming from taps in Sector 12', d: 'Drinking supply is muddy and brown. Heavy foul smell.' },
-      { t: 'Pipeline leakage near school in Sector 12', d: 'Huge gush of clean water leaking from underground pipe near the primary gate.' },
-      { t: 'Repeated water shortage complaints in Sector 12', d: 'Water pressure drops and stops every alternate day. Area crisis.' }
-    ];
+    // Case 1: Water leakage Dwarka Sector 12
+    const cSusp1 = {
+      title: 'Water supply stopped for 3 days in Sector 12',
+      description: 'Murky brown water coming from taps since Tuesday. Water pressure is close to zero.',
+      category: 'Water Supply',
+      departmentId: wsb._id,
+      officerId: oWater._id,
+      citizenId: citizens[1]._id,
+      location: { lat: 28.5912, lng: 77.0422, address: 'Sector 12, Dwarka, Delhi' },
+      priority: 'high',
+      status: 'resolved',
+      officialStatus: 'resolved',
+      ward: 'Ward 1',
+      realityScore: 18,
+      realityStatus: 'High Risk',
+      isQuestionableResolution: true,
+      realityScoreBreakdown: [
+        { factor: 'Citizen disputed closure', delta: -30 },
+        { factor: 'Complaint reopened twice', delta: -20 },
+        { factor: 'Similar complaints nearby', delta: -15 },
+        { factor: 'Officer trust below threshold', delta: -10 }
+      ],
+      createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
+    };
+    complaintsArray.push(cSusp1);
 
-    for (let i = 0; i < s1Titles.length; i++) {
-      complaintsArray.push({
-        title: s1Titles[i].t,
-        description: s1Titles[i].d,
-        category: 'Water Contamination',
-        departmentId: wsb._id,
-        officerId: oWater._id,
-        citizenId: citizens[i % 50]._id,
-        location: { lat: 18.9226, lng: 72.8344, address: 'Sector 12, South Mumbai' },
-        priority: 'high',
-        status: 'assigned',
-        officialStatus: 'pending',
-        ward: 'Ward 1',
-        realityScore: 35,
-        realityStatus: 'High Risk',
-        createdAt: new Date(Date.now() - i * 12 * 60 * 60 * 1000) // created in past 2.5 days
-      });
-    }
-
-    // ========================================================
-    // SCENARIO 2: ADMINISTRATIVE DELAY ANOMALY (Ward 3)
-    // ========================================================
-    // 4 complaints assigned to Officer 1 (oWater) pending 16 days. Historical avg is 3 days.
-    for (let i = 0; i < 4; i++) {
-      complaintsArray.push({
-        title: `Pending Sewage Backflow - Ward 3 Block ${String.fromCharCode(65 + i)}`,
-        description: `Deep sewerage blockage and overflow onto pavements. Assigned to officer but no resolution for over two weeks.`,
-        category: 'Water Contamination',
-        departmentId: wsb._id,
-        officerId: oWater._id,
-        citizenId: citizens[(i + 5) % 50]._id,
-        location: { lat: 18.9610, lng: 72.8420, address: `Ward 3, Byculla` },
-        priority: 'high',
-        status: 'assigned',
-        officialStatus: 'pending',
-        ward: 'Ward 3',
-        realityScore: 28,
-        realityStatus: 'High Risk',
-        createdAt: new Date(Date.now() - 16 * 24 * 60 * 60 * 1000) // 16 days ago
-      });
-    }
-
-    // ========================================================
-    // SCENARIO 3: FALSE RESOLUTION DETECTION (Streetlight Cluster)
-    // ========================================================
-    // Resolved Streetlight Complaint B1 (Citizen reopens)
-    const compB1 = {
-      title: 'Streetlight not working at Fort Circle',
+    // Case 2: Streetlight cluster failure in Connaught Place
+    const cSusp2 = {
+      title: 'Streetlight not working at Connaught Place',
       description: 'Streetlight pole #45 is completely out. Total darkness.',
       category: 'Electrical Hazard',
       departmentId: eb._id,
       officerId: oElectric._id,
-      citizenId: primaryCitizen._id,
-      location: { lat: 18.9322, lng: 72.8310, address: 'Flora Fountain, Fort Circle' },
+      citizenId: citizens[2]._id,
+      location: { lat: 28.6304, lng: 77.2177, address: 'Connaught Place, Delhi' },
       priority: 'medium',
-      status: 'reopened', // citizen disputed resolution
-      officialStatus: 'pending',
+      status: 'reopened',
+      officialStatus: 'resolved',
       ward: 'Ward 2',
-      realityScore: 21, // False closure score
+      realityScore: 22,
       realityStatus: 'High Risk',
-      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) // resolved 2 days ago, reopened yesterday
+      isQuestionableResolution: true,
+      realityScoreBreakdown: [
+        { factor: 'Citizen disputed resolution', delta: -30 },
+        { factor: 'Officer trust score under review', delta: -5 },
+        { factor: 'No community validation votes', delta: -15 },
+        { factor: 'Single similar complaint nearby', delta: -5 }
+      ],
+      createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
     };
-    complaintsArray.push(compB1);
+    complaintsArray.push(cSusp2);
 
-    // Nearby similar complaints logged around the same time
-    complaintsArray.push({
-      title: 'Complete darkness due to non-functional streetlights near Fort Circle',
-      description: 'Dangerous situation. Walkways are dark and unsafe for pedestrians.',
-      category: 'Electrical Hazard',
-      departmentId: eb._id,
-      officerId: oElectric._id,
-      citizenId: citizens[12]._id,
-      location: { lat: 18.9330, lng: 72.8315, address: 'Flora Fountain, Fort Circle' },
-      priority: 'medium',
-      status: 'assigned',
-      officialStatus: 'pending',
-      ward: 'Ward 2',
+    // Case 3: Garbage pileup near Karol Bagh market
+    const cSusp3 = {
+      title: 'Garbage pileup near Karol Bagh market',
+      description: 'Large pile of commercial waste accumulating near the market gate. Foul smell and flies.',
+      category: 'Garbage Pileup',
+      departmentId: mc._id,
+      officerId: officerUsers[4]._id, // MC officer
+      citizenId: citizens[3]._id,
+      location: { lat: 28.6506, lng: 77.1896, address: 'Ward 3, Karol Bagh, Delhi' },
+      priority: 'high',
+      status: 'resolved',
+      officialStatus: 'resolved',
+      ward: 'Ward 3',
       realityScore: 25,
       realityStatus: 'High Risk',
-      createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000)
-    });
+      isQuestionableResolution: true,
+      realityScoreBreakdown: [
+        { factor: 'Citizen disputed closure', delta: -30 },
+        { factor: 'SLA timeline breached', delta: -15 },
+        { factor: 'No community validation votes', delta: -15 }
+      ],
+      createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
+    };
+    complaintsArray.push(cSusp3);
 
-    complaintsArray.push({
-      title: 'Streetlights blinking and going out near Fort Circle',
-      description: 'Substation supply issue, flickering repeatedly.',
-      category: 'Electrical Hazard',
-      departmentId: eb._id,
-      officerId: oElectric._id,
-      citizenId: citizens[13]._id,
-      location: { lat: 18.9318, lng: 72.8305, address: 'Flora Fountain, Fort Circle' },
-      priority: 'low',
+    // ========================================================
+    // 2 COMPLAINT RESURRECTION SCENARIOS (Parent + Resurrected Child)
+    // ========================================================
+    // Resurrection A: Road Potholes near Connaught Place
+    const cResA_Parent = {
+      title: 'Road potholes repaired near Connaught Place',
+      description: 'Pothole cluster filled on Connaught Place inner circle.',
+      category: 'Road Damage',
+      departmentId: rid._id,
+      officerId: oRoad._id,
+      citizenId: citizens[4]._id,
+      location: { lat: 28.6300, lng: 77.2170, address: 'Connaught Place, Delhi' },
+      priority: 'medium',
+      status: 'resolved',
+      officialStatus: 'resolved',
+      ward: 'Ward 2',
+      realityScore: 35,
+      realityStatus: 'High Risk',
+      isQuestionableResolution: true,
+      realityScoreBreakdown: [
+        { factor: 'Complaint resurfaced nearby / questionable resolution', delta: -30 },
+        { factor: 'Limited community validation', delta: -10 }
+      ],
+      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+    };
+    complaintsArray.push(cResA_Parent);
+
+    const cResA_Child = {
+      title: 'Dangerous potholes reappeared near Connaught Place',
+      description: 'The pothole filler has already washed away. Deep craters are back at the same location.',
+      category: 'Road Damage',
+      departmentId: rid._id,
+      officerId: oRoad._id,
+      citizenId: citizens[5]._id,
+      location: { lat: 28.6302, lng: 77.2172, address: 'Connaught Place, Delhi' }, // within 0.1km
+      priority: 'high',
       status: 'assigned',
       officialStatus: 'pending',
       ward: 'Ward 2',
       realityScore: 30,
       realityStatus: 'High Risk',
-      createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
-    });
+      isResurrected: true,
+      realityScoreBreakdown: [
+        { factor: 'Resurfaced unresolved issue', delta: -25 },
+        { factor: 'Pending citizen resolution confirmation', delta: -15 },
+        { factor: 'No community validation votes', delta: -15 },
+        { factor: 'Single similar complaint nearby', delta: -5 }
+      ],
+      createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000) // created today
+    };
+    complaintsArray.push(cResA_Child);
+
+    // Resurrection B: Sewer Overflow Rohini Sector 8
+    const cResB_Parent = {
+      title: 'Sewer overflow fixed at Rohini Sector 8',
+      description: 'Blockage cleared in main drain pipe behind Sector 8 market.',
+      category: 'Water Supply',
+      departmentId: wsb._id,
+      officerId: oWater._id,
+      citizenId: citizens[6]._id,
+      location: { lat: 28.7032, lng: 77.1215, address: 'Sector 8, Rohini, Delhi' },
+      priority: 'high',
+      status: 'resolved',
+      officialStatus: 'resolved',
+      ward: 'Ward 1',
+      realityScore: 30,
+      realityStatus: 'High Risk',
+      isQuestionableResolution: true,
+      realityScoreBreakdown: [
+        { factor: 'Complaint resurfaced nearby / questionable resolution', delta: -30 },
+        { factor: 'No community validation votes', delta: -15 }
+      ],
+      createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)
+    };
+    complaintsArray.push(cResB_Parent);
+
+    const cResB_Child = {
+      title: 'Sewer backflow resurfaced at Rohini Sector 8',
+      description: 'Sewerage black water overflow back on the streets. Resolution was temporary.',
+      category: 'Water Supply',
+      departmentId: wsb._id,
+      officerId: oWater._id,
+      citizenId: citizens[7]._id,
+      location: { lat: 28.7034, lng: 77.1216, address: 'Sector 8, Rohini, Delhi' },
+      priority: 'high',
+      status: 'pending',
+      officialStatus: 'pending',
+      ward: 'Ward 1',
+      realityScore: 25,
+      realityStatus: 'High Risk',
+      isResurrected: true,
+      realityScoreBreakdown: [
+        { factor: 'Resurfaced unresolved issue', delta: -25 },
+        { factor: 'Pending citizen resolution confirmation', delta: -15 },
+        { factor: 'No community validation votes', delta: -15 }
+      ],
+      createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000) // created today
+    };
+    complaintsArray.push(cResB_Child);
 
     // ========================================================
-    // FILLER DATA: 88 additional randomized complaints to hit exactly 100
+    // 2 CRITICAL HAZARD SCENARIOS (High priority + Active Alerts)
+    // ========================================================
+    const cHaz1 = {
+      title: 'High-voltage wire sparking near Dwarka Metro Pillar',
+      description: 'Live electrical cable hanging loose and sparking continuously near Metro Pillar 104. Major shock risk.',
+      category: 'Electrical Hazard',
+      departmentId: eb._id,
+      officerId: oElectric._id,
+      citizenId: citizens[8]._id,
+      location: { lat: 28.5925, lng: 77.0450, address: 'Sector 12, Dwarka, Delhi' },
+      priority: 'critical',
+      status: 'assigned',
+      officialStatus: 'pending',
+      ward: 'Ward 1',
+      realityScore: 40,
+      realityStatus: 'Needs Verification',
+      realityScoreBreakdown: [
+        { factor: 'Pending citizen resolution confirmation', delta: -15 },
+        { factor: 'No community validation votes', delta: -15 }
+      ],
+      createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000) // created 3 hours ago
+    };
+    complaintsArray.push(cHaz1);
+
+    const cHaz2 = {
+      title: 'Deep open manhole on Main Karol Bagh Road',
+      description: 'Cover missing on main sewer line directly in the path of oncoming traffic. Extremely dangerous.',
+      category: 'Open Manhole',
+      departmentId: wsb._id,
+      officerId: oWater._id,
+      citizenId: citizens[9]._id,
+      location: { lat: 28.6515, lng: 77.1910, address: 'Ward 3, Karol Bagh, Delhi' },
+      priority: 'critical',
+      status: 'assigned',
+      officialStatus: 'pending',
+      ward: 'Ward 3',
+      realityScore: 35,
+      realityStatus: 'High Risk',
+      realityScoreBreakdown: [
+        { factor: 'Pending citizen resolution confirmation', delta: -15 },
+        { factor: 'No community validation votes', delta: -15 },
+        { factor: 'Single similar complaint nearby', delta: -5 }
+      ],
+      createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000) // created 5 hours ago
+    };
+    complaintsArray.push(cHaz2);
+
+    // ========================================================
+    // FILLER DATA: Generate remaining complaints to hit exactly 100
     // ========================================================
     const categories = ['Water Supply', 'Road Damage', 'Electrical Hazard', 'Open Manhole', 'Garbage Pileup', 'Fire Incident', 'Electricity Supply'];
     const wards = ['Ward 1', 'Ward 2', 'Ward 3'];
@@ -250,11 +375,17 @@ export async function GET(req: NextRequest) {
 
     for (let i = 0; i < fillerCount; i++) {
       const citizenIdx = Math.floor(Math.random() * 50);
-      const officerIdx = Math.floor(Math.random() * 10);
+      
+      // Overloaded Officers check: Force officerIdx to 0 or 2 for the first 32 filler complaints
+      let officerIdx = Math.floor(Math.random() * 10);
+      if (i < 16) {
+        officerIdx = 0; // oWater
+      } else if (i >= 16 && i < 32) {
+        officerIdx = 2; // oElectric
+      }
+
       const targetOfficerUser = officerUsers[officerIdx];
       const targetOfficerProfile = officers[officerIdx];
-      const status = statuses[Math.floor(Math.random() * statuses.length)];
-      const priority = priorities[Math.floor(Math.random() * priorities.length)];
       const ward = wards[Math.floor(Math.random() * wards.length)];
       const category = categories[Math.floor(Math.random() * categories.length)];
 
@@ -263,6 +394,10 @@ export async function GET(req: NextRequest) {
       else if (category.includes('Electrical') || category.includes('Supply')) dept = eb;
       else if (category.includes('Fire')) dept = fes;
       else if (category.includes('Road')) dept = rid;
+
+      let status = statuses[Math.floor(Math.random() * statuses.length)];
+      let officialStatus = status === 'resolved' ? 'resolved' : 'pending';
+      const priority = priorities[Math.floor(Math.random() * priorities.length)];
 
       // Seed dates across the previous 60 days
       const daysAgo = Math.floor(Math.random() * 60) + 1; // 1 to 60 days
@@ -275,16 +410,29 @@ export async function GET(req: NextRequest) {
         updatedAt = new Date(createdAt.getTime() + resolveDays * 24 * 60 * 60 * 1000);
       }
 
-      // Reality score modeling: high scores for resolved without issues, low for others
+      // Reality score modeling
       let realityScore = 50;
       let realityStatus: 'Verified' | 'Needs Verification' | 'High Risk' = 'Needs Verification';
 
-      if (status === 'resolved') {
-        realityScore = Math.floor(Math.random() * 20) + 80; // 80 - 100
-        realityStatus = 'Verified';
+      // For Road & Infrastructure Dept (RID) - Force huge reality gap
+      if (dept._id.toString() === rid._id.toString()) {
+        status = 'resolved';
+        officialStatus = 'resolved';
+        if (Math.random() < 0.8) {
+          realityScore = Math.floor(Math.random() * 20) + 15; // 15 - 35
+          realityStatus = 'High Risk';
+        } else {
+          realityScore = Math.floor(Math.random() * 15) + 80; // 80 - 95
+          realityStatus = 'Verified';
+        }
       } else {
-        realityScore = Math.floor(Math.random() * 30) + 35; // 35 - 65
-        realityStatus = realityScore < 40 ? 'High Risk' : 'Needs Verification';
+        if (status === 'resolved') {
+          realityScore = Math.floor(Math.random() * 20) + 80; // 80 - 100
+          realityStatus = 'Verified';
+        } else {
+          realityScore = Math.floor(Math.random() * 30) + 35; // 35 - 65
+          realityStatus = realityScore < 40 ? 'High Risk' : 'Needs Verification';
+        }
       }
 
       complaintsArray.push({
@@ -295,22 +443,50 @@ export async function GET(req: NextRequest) {
         officerId: targetOfficerUser._id,
         citizenId: citizens[citizenIdx]._id,
         location: { 
-          lat: 18.9226 + (Math.random() - 0.5) * 0.05, 
-          lng: 72.8344 + (Math.random() - 0.5) * 0.05, 
-          address: `Colony Block ${i}, ${ward}, Mumbai` 
+          lat: 28.6139 + (Math.random() - 0.5) * 0.05, 
+          lng: 77.2090 + (Math.random() - 0.5) * 0.05, 
+          address: `Colony Block ${i}, ${ward}, Delhi` 
         },
         priority,
         status,
-        officialStatus: status === 'resolved' ? 'resolved' : 'pending',
+        officialStatus,
         ward,
         realityScore,
         realityStatus,
+        realityScoreBreakdown: [
+          { factor: status === 'resolved' ? 'Citizen verified resolution' : 'Pending resolution confirmation', delta: status === 'resolved' ? 0 : -15 }
+        ],
         createdAt,
         updatedAt
       });
     }
 
     const seededComplaints = await Complaint.create(complaintsArray);
+
+    // Seed Resurrection Events in the DB
+    const resParentA = seededComplaints.find((c: any) => c.title === 'Road potholes repaired near Connaught Place');
+    const resChildA = seededComplaints.find((c: any) => c.title === 'Dangerous potholes reappeared near Connaught Place');
+    if (resParentA && resChildA) {
+      await ResurrectionEvent.create({
+        parentComplaintId: resParentA._id,
+        resurrectedComplaintId: resChildA._id,
+        category: 'Road Damage',
+        distanceKm: 0.1,
+        timeGapDays: 5
+      });
+    }
+
+    const resParentB = seededComplaints.find((c: any) => c.title === 'Sewer overflow fixed at Rohini Sector 8');
+    const resChildB = seededComplaints.find((c: any) => c.title === 'Sewer backflow resurfaced at Rohini Sector 8');
+    if (resParentB && resChildB) {
+      await ResurrectionEvent.create({
+        parentComplaintId: resParentB._id,
+        resurrectedComplaintId: resChildB._id,
+        category: 'Water Supply',
+        distanceKm: 0.05,
+        timeGapDays: 10
+      });
+    }
 
     // 7. Seed corresponding escalated safety alerts and audit logs
     for (const c of seededComplaints) {
@@ -349,18 +525,25 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Recalculate trust profiles for overloaded/underperforming officers
+    for (const off of officers) {
+      await TrustEngine.recalculateOfficerTrust(off.userId, 'Initial database sync');
+    }
+
     return NextResponse.json({
       success: true,
-      message: 'MongoDB seeded successfully with exactly 100 complaints and the 3 RealityEngine scenarios.',
+      message: 'MongoDB seeded successfully with exactly 100 complaints and enhanced hackathon demo scenarios.',
       statistics: {
         citizens: 50,
         officers: 10,
         departments: 5,
         totalComplaints: seededComplaints.length,
         anomaliesSeeded: [
-          'Sector 12 Water Infrastructure Failure Cluster (5 reports)',
-          'Ward 3 Administrative Delay Anomaly (4 delayed reports)',
-          'Fort Circle Streetlight False Resolution Incident (3 reports)'
+          '3 Suspicious Closure Scenarios',
+          '2 Complaint Resurrection Scenarios',
+          '2 Critical Active Hazards with Alerts',
+          '2 Overloaded Officers (Water & Electric)',
+          'Road & Infrastructure Dept (RID) reality gap'
         ]
       }
     });

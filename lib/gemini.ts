@@ -110,16 +110,152 @@ export async function getEmbedding(text: string): Promise<number[]> {
 }
 
 /**
+ * Generates dynamic local answers as fallback based on dashboard context and user question.
+ */
+function getLocalCopilotResponse(question: string, context: string): string {
+  const q = question.toLowerCase();
+
+  // Helper to extract a section from context
+  const extractSection = (header: string, nextHeaderRegex: RegExp): string => {
+    const startIndex = context.indexOf(header);
+    if (startIndex === -1) return '';
+    const startOfContent = startIndex + header.length;
+    const match = context.substring(startOfContent).match(nextHeaderRegex);
+    if (match && match.index !== undefined) {
+      return context.substring(startOfContent, startOfContent + match.index).trim();
+    }
+    return context.substring(startOfContent).trim();
+  };
+
+  const overallMetrics = extractSection('OVERALL METRICS:', /\n[A-Z]/);
+  const activeAlerts = extractSection('ACTIVE CRITICAL ALERTS:', /\n[A-Z]/);
+  const suspiciousClosures = extractSection('SUSPICIOUS CLOSURES[\s\S]*?:', /\n[A-Z]/);
+  const departmentPerformance = extractSection('DEPARTMENT PERFORMANCE:', /\n[A-Z]/);
+  const lowTrustOfficers = extractSection('LOW TRUST OFFICERS[\s\S]*?:', /\n---|\n$/);
+
+  let response = '';
+
+  if (q.includes('attention') || q.includes('priority') || q.includes('critical') || q.includes('what requires')) {
+    response = `### 🚨 CM Action Required: Priority Items & Alerts
+
+Here are the critical governance issues requiring your immediate intervention:
+
+**1. Active Critical Safety Alerts:**
+${activeAlerts && activeAlerts !== 'No active critical safety alerts.' 
+  ? activeAlerts 
+  : '*No active critical safety alerts currently reported. All major hazards are mitigated.*'}
+
+**2. Direct Recommended Actions:**
+${activeAlerts && activeAlerts !== 'No active critical safety alerts.'
+  ? `- Deploy immediate field verification teams to the locations listed in the active alerts.
+- Temporarily suspend officers responsible for repeated delays in safety resolutions.
+- Order an administrative review of trust-breached closures.`
+  : `- Review departments with high Reality Gaps (see below).
+- Monitor performance of low-trust officers in the field.`}
+
+**3. Suspicious Closures Status:**
+${suspiciousClosures && suspiciousClosures !== 'No suspicious closures flagged.'
+  ? `We have detected suspicious closures that were marked "Resolved" officially but are flagged as "High Risk" by the Reality Engine:
+${suspiciousClosures}`
+  : '*No suspicious closures detected.*'}`;
+  } 
+  else if (q.includes('department') || q.includes('reality gap') || q.includes('gap') || q.includes('performance')) {
+    response = `### 📊 Department Performance & Reality Gap Analysis
+
+The "Reality Gap" represents the difference between the **Official Resolution Rate** claimed by the department and the **Ground Reality Verified Rate** checked by citizens and AI sensors.
+
+**Department Status:**
+${departmentPerformance || '*No department data found.*'}
+
+**Key Recommendations:**
+1. **Target Large Gaps:** Address departments where the Reality Gap exceeds 10%. This indicates significant administrative misalignment or false reporting.
+2. **Audit Municipal Services:** The Municipal Corporation frequently exhibits discrepancies. Establish random ground-truth verification rounds.
+3. **Link Budgeting to Integrity:** Tie future department allocations to their Governance Integrity Score rather than official claims.`;
+  }
+  else if (q.includes('suspicious') || q.includes('closure') || q.includes('false')) {
+    response = `### 🔍 Suspicious Closures Report (Reality Engine)
+
+The following grievances were marked as "RESOLVED" by officers, but the Ground Reality Score is **High Risk** (<40%), suggesting potential false closures or inadequate work:
+
+${suspiciousClosures && suspiciousClosures !== 'No suspicious closures flagged.'
+  ? suspiciousClosures
+  : '*Excellent: There are currently no suspicious closures flagged by the Reality Engine.*'}
+
+**Executive Recommendation:**
+- **Reopen & Reassign:** Automatically reopen these issues and assign them to independent audit teams.
+- **Officer Accountability:** Flag officers who repeatedly close cases that are subsequently marked "High Risk".`;
+  }
+  else if (q.includes('officer') || q.includes('high-risk') || q.includes('trust')) {
+    response = `### 👤 High-Risk Officers & Trust Scoring
+
+Officers are scored based on citizen approval, average resolution time, and the frequency of reopened complaints or suspicious closures.
+
+**Low Trust Officers (Score < 60%):**
+${lowTrustOfficers && lowTrustOfficers !== 'No low trust officers flagged.'
+  ? lowTrustOfficers
+  : '*All active officers are currently performing above the 60% trust threshold.*'}
+
+**Policy Actions:**
+1. **Mandatory Audits:** Place any officer with a trust score below 60% under active administrative review.
+2. **Freeze Resolution Claims:** Disallow automatic case-closure privileges for officers under warning status; require citizen feedback verification.`;
+  }
+  else if (q.includes('brief') || q.includes('summary') || q.includes('today')) {
+    response = `### 📋 Chief Minister's Executive Brief
+
+**1. Core System Metrics:**
+${overallMetrics || '*Metrics unavailable*'}
+
+**2. Critical Alerts & Hazards:**
+${activeAlerts && activeAlerts !== 'No active critical safety alerts.'
+  ? activeAlerts
+  : '*No active critical safety alerts.*'}
+
+**3. Top Administrative Concerns:**
+- **Reality Discrepancies:** Multiple departments show gaps between claimed resolutions and ground truth.
+- **Trust Integrity:** Attention should be given to Suspicious Closures and Low Trust Officers.
+
+**4. 10-Second Executive Summary:**
+- **Status:** The general Governance Integrity Score is stable, but field vigilance is required.
+- **Immediate Action:** Direct the Sanitation/Municipal commissioner to report on unresolved critical alerts.`;
+  }
+  else {
+    // General default response
+    response = `### 🛡️ GovTech AI Governance Copilot Response
+
+You asked: "${question}"
+
+Here is the current Governance Intelligence Summary based on live database logs:
+
+**System Metrics:**
+${overallMetrics || '*Metrics unavailable*'}
+
+**Active Critical Alerts:**
+${activeAlerts && activeAlerts !== 'No active critical safety alerts.'
+  ? activeAlerts
+  : '*No active critical safety alerts.*'}
+
+**Suspicious Closures Pending Audit:**
+${suspiciousClosures && suspiciousClosures !== 'No suspicious closures flagged.'
+  ? suspiciousClosures
+  : '*No suspicious closures flagged.*'}
+
+**Officer Trust Summary:**
+${lowTrustOfficers && lowTrustOfficers !== 'No low trust officers flagged.'
+  ? lowTrustOfficers
+  : '*No low trust officers flagged.*'}
+
+*Note: For detailed questions, please ask about specific departments, suspicious closures, high-risk officers, or current critical alerts.*`;
+  }
+
+  return `${response}\n\n*Analysis generated using local RAG fallback engine.*`;
+}
+
+/**
  * Generates custom text answers (RAG) based on context database chunks.
  */
 export async function askGeminiCopilot(question: string, context: string): Promise<string> {
   if (!ai) {
-    return `[Mock Copilot Response]
-You asked: "${question}"
-System Note: GEMINI_API_KEY is not configured. Here is the analyzed dashboard context:
-${context.substring(0, 400)}...
-    
-Based on local analysis, you should focus on resolving critical hazards and reviewing high-risk departments (e.g. Water & Sewerage Board).`;
+    return getLocalCopilotResponse(question, context);
   }
 
   try {
@@ -140,9 +276,9 @@ Provide a concise, professional executive answer with bullets, highlighting exac
 `;
 
     const result = await model.generateContent(prompt);
-    return result.response.text() || 'Unable to generate response from CM Copilot.';
+    return result.response.text() || getLocalCopilotResponse(question, context);
   } catch (err) {
-    console.error('Gemini Copilot Error:', err);
-    return `An error occurred while calling the Gemini API: ${err instanceof Error ? err.message : String(err)}`;
+    console.error('Gemini Copilot Error, using local RAG fallback:', err);
+    return getLocalCopilotResponse(question, context);
   }
 }

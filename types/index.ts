@@ -63,6 +63,10 @@ export interface IComplaint {
   officialStatus: 'pending' | 'in_progress' | 'resolved';
   realityScore: number; // 0 - 100
   realityStatus: RealityStatus;
+  realityScoreBreakdown?: { factor: string; delta: number }[];
+  isQuestionableResolution?: boolean;
+  isResurrected?: boolean;
+  resurrectedFromComplaintId?: string | ObjectId;
   embedding?: number[]; // Vector embedding for similarity
   imageUrl?: string;
   voiceUrl?: string; // Voice complaint path or content
@@ -124,4 +128,16 @@ export interface IRealityCalculationResult {
   score: number;
   status: RealityStatus;
   signals: IRealityScoreHistory['signalsEvaluated'];
+  explanationBreakdown?: { factor: string; delta: number }[];
 }
+
+export interface IResurrectionEvent {
+  _id?: string | ObjectId;
+  parentComplaintId: string | ObjectId;
+  resurrectedComplaintId: string | ObjectId;
+  category: string;
+  distanceKm: number;
+  timeGapDays: number;
+  createdAt?: Date;
+}
+
